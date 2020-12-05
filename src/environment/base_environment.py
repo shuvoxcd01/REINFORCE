@@ -7,7 +7,7 @@ class BaseEnvironment(ABC):
         pass
 
     @abstractmethod
-    def step(self):
+    def step(self, action):
         pass
 
     @abstractmethod
@@ -29,4 +29,3 @@ class BaseEnvironment(ABC):
     @abstractmethod
     def get_num_actions(self):
         pass
-
