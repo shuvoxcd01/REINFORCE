@@ -1,3 +1,5 @@
+import statistics
+
 import tensorflow as tf
 
 
@@ -6,8 +8,8 @@ class Reinforce:
         self.environment = environment
         self.observation_shape = self.environment.get_observation_shape()
         self.num_actions = self.environment.get_num_actions()
-        self.step_size = 2 ** -14
-        self.discount_factor = 0.99
+        self.step_size = 0.001
+        self.discount_factor = 1
         self.policy = self.get_nn_policy()
         self.summary_writer = summary_writer
 
@@ -21,15 +23,18 @@ class Reinforce:
 
         return model
 
-    def update_gradients(self, state, action, episode_return, num_step):
+    def get_gradients(self, state, action):
         with tf.GradientTape() as tape:
             selected_action_log_prob = tf.math.log(self.policy(state)[0][action])
 
         eligibility_vector = tape.gradient(selected_action_log_prob, self.policy.trainable_variables)
 
+        return eligibility_vector
+
+    def update_gradients(self, gradients, episode_return, num_step):
         for i in range(len(self.policy.trainable_variables)):
             self.policy.trainable_variables[i].assign_add(
-                self.step_size * episode_return * (self.discount_factor ** num_step) * eligibility_vector[i])
+                self.step_size * episode_return * (self.discount_factor ** num_step) * gradients[i])
 
     def get_action(self, observation):
         action_probs = self.policy(observation)[0]
@@ -37,11 +42,20 @@ class Reinforce:
 
         return action
 
+    def normalize_returns(self, returns):
+        mean = statistics.mean(returns)
+        stdev = statistics.stdev(returns)
+
+        normalized_returns = [(x - mean) / stdev for x in returns]
+
+        return normalized_returns
+
     def learn_optimal_policy(self, num_epochs=10000):
         for epoch_num in range(num_epochs):
             states = []
             actions = []
             rewards = []
+            gradients_list = []
 
             done = False
             observation = self.environment.reset()
@@ -56,6 +70,9 @@ class Reinforce:
                 observation, reward, done, info = self.environment.step(action)
                 rewards.append(reward)
 
+                gradients = self.get_gradients(state=states[-1], action=actions[-1])
+                gradients_list.append(gradients)
+
             if self.summary_writer:
                 self.summary_writer.write_summary("Episode Return", sum(rewards), epoch_num)
 
@@ -63,5 +80,7 @@ class Reinforce:
             for i in reversed(range(len(rewards) - 1)):
                 returns[i] += self.discount_factor * returns[i + 1]
 
+            normalized_returns = self.normalize_returns(returns)
+
             for i in range(len(states)):
-                self.update_gradients(states[i], actions[i], returns[i], i)
+                self.update_gradients(gradients_list[i], normalized_returns[i], i)
