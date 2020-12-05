@@ -6,29 +6,31 @@ class Reinforce:
         self.environment = environment
         self.observation_shape = self.environment.get_observation_shape()
         self.num_actions = self.environment.get_num_actions()
-        self.step_size = 2 ** -14
-        self.discount_factor = 0.99
+        self.step_size = 0.001
+        self.discount_factor = 1
         self.policy = self.get_nn_policy()
         self.summary_writer = summary_writer
 
     def get_nn_policy(self):
         model = tf.keras.models.Sequential()
-        model.add(tf.keras.layers.Dense(units=256, input_shape=self.observation_shape, activation='relu'))
-        model.add(tf.keras.layers.Dense(units=256, activation='relu'))
-        model.add(tf.keras.layers.Dense(units=256, activation='relu'))
+        model.add(tf.keras.layers.Dense(units=64, input_shape=self.observation_shape, activation='relu'))
+        model.add(tf.keras.layers.Dense(units=64, activation='relu'))
         model.add(tf.keras.layers.Dense(units=self.num_actions, activation='softmax'))
 
         return model
 
-    def update_gradients(self, state, action, episode_return, num_step):
+    def get_gradients(self, state, action):
         with tf.GradientTape() as tape:
             selected_action_prob = tf.math.log(self.policy(state)[0][action])
 
         eligibility_vector = tape.gradient(selected_action_prob, self.policy.trainable_variables)
 
+        return eligibility_vector
+
+    def update_gradients(self, gradients, episode_return, num_step):
         for i in range(len(self.policy.trainable_variables)):
             self.policy.trainable_variables[i].assign_add(
-                self.step_size * (episode_return ** num_step) * eligibility_vector[i])
+                self.step_size * (episode_return ** num_step) * gradients[i])
 
     def get_action(self, observation):
         action_probs = self.policy(observation)[0]
@@ -41,6 +43,7 @@ class Reinforce:
             states = []
             actions = []
             rewards = []
+            gradients_list = []
 
             done = False
             observation = self.environment.reset()
@@ -55,6 +58,9 @@ class Reinforce:
                 observation, reward, done, info = self.environment.step(action)
                 rewards.append(reward)
 
+                gradients = self.get_gradients(state=states[-1], action=actions[-1])
+                gradients_list.append(gradients)
+
             if self.summary_writer:
                 self.summary_writer.write_summary("Episode Return", sum(rewards), epoch_num)
 
@@ -63,4 +69,4 @@ class Reinforce:
                 returns[i] += self.discount_factor * returns[i + 1]
 
             for i in range(len(states)):
-                self.update_gradients(states[i], actions[i], returns[i], i)
+                self.update_gradients(gradients_list[i], returns[i], i)
