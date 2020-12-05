@@ -21,16 +21,16 @@ class Reinforce:
 
     def get_gradients(self, state, action):
         with tf.GradientTape() as tape:
-            selected_action_prob = tf.math.log(self.policy(state)[0][action])
+            selected_action_log_prob = tf.math.log(self.policy(state)[0][action])
 
-        eligibility_vector = tape.gradient(selected_action_prob, self.policy.trainable_variables)
+        eligibility_vector = tape.gradient(selected_action_log_prob, self.policy.trainable_variables)
 
         return eligibility_vector
 
     def update_gradients(self, gradients, episode_return, num_step):
         for i in range(len(self.policy.trainable_variables)):
             self.policy.trainable_variables[i].assign_add(
-                self.step_size * (episode_return ** num_step) * gradients[i])
+                self.step_size * episode_return * (self.discount_factor ** num_step) * gradients[i])
 
     def get_action(self, observation):
         action_probs = self.policy(observation)[0]
