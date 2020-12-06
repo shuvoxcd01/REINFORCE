@@ -5,7 +5,7 @@ from src.environment.base_environment import BaseEnvironment
 
 class CartPoleEnvironment(BaseEnvironment):
     def __init__(self):
-        self.env = gym.make("CartPole-v1")
+        self.env = gym.make("CartPole-v0")
 
     def reset(self):
         return self.env.reset()
