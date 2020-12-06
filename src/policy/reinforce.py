@@ -1,19 +1,26 @@
+import os
 import statistics
 
 import tensorflow as tf
 
 
 class Reinforce:
-    def __init__(self, environment, summary_writer=None):
+    def __init__(self, environment, summary_writer=None, load_model_path=None, save_model_path=None):
         self.environment = environment
         self.observation_shape = self.environment.get_observation_shape()
         self.num_actions = self.environment.get_num_actions()
         self.step_size = 0.001
         self.discount_factor = 1
-        self.policy = self.get_nn_policy()
+        self.load_model_path = load_model_path
+        self.save_model_path = save_model_path
         self.summary_writer = summary_writer
 
+        self.policy = self.get_nn_policy()
+
     def get_nn_policy(self):
+        if self.load_model_path is not None:
+            return self.get_saved_nn_policy()
+
         model = tf.keras.models.Sequential()
         model.add(tf.keras.layers.Dense(units=28, input_shape=self.observation_shape, activation='relu'))
         model.add(tf.keras.layers.Dense(units=28, activation='relu'))
@@ -21,6 +28,10 @@ class Reinforce:
 
         model.add(tf.keras.layers.Dense(units=self.num_actions, activation='softmax'))
 
+        return model
+
+    def get_saved_nn_policy(self):
+        model = tf.keras.models.load_model(self.load_model_path)
         return model
 
     def get_gradients(self, state, action):
@@ -42,7 +53,8 @@ class Reinforce:
 
         return action
 
-    def normalize_returns(self, returns):
+    @staticmethod
+    def normalize_returns(returns):
         mean = statistics.mean(returns)
         stdev = statistics.stdev(returns)
 
@@ -84,3 +96,9 @@ class Reinforce:
 
             for i in range(len(states)):
                 self.update_gradients(gradients_list[i], normalized_returns[i], i)
+
+            if self.save_model_path is not None and ((epoch_num + 1) % 100):
+                saved_filename = "_epoch_" + str(epoch_num + 1) + ".h5"
+                saved_file_path = os.path.join(self.save_model_path, saved_filename)
+
+                self.policy.save(saved_file_path)
