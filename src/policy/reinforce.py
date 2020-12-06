@@ -25,7 +25,6 @@ class Reinforce:
         model.add(tf.keras.layers.Dense(units=28, input_shape=self.observation_shape, activation='relu'))
         model.add(tf.keras.layers.Dense(units=28, activation='relu'))
         model.add(tf.keras.layers.Dense(units=28, activation='relu'))
-
         model.add(tf.keras.layers.Dense(units=self.num_actions, activation='softmax'))
 
         return model
@@ -97,7 +96,7 @@ class Reinforce:
             for i in range(len(states)):
                 self.update_gradients(gradients_list[i], normalized_returns[i], i)
 
-            if self.save_model_path is not None and ((epoch_num + 1) % 100):
+            if (self.save_model_path is not None) and not ((epoch_num + 1) % 1000):
                 saved_filename = "_epoch_" + str(epoch_num + 1) + ".h5"
                 saved_file_path = os.path.join(self.save_model_path, saved_filename)
 
