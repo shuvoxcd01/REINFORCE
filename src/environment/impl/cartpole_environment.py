@@ -1,5 +1,6 @@
-from src.environment.base_environment import BaseEnvironment
 import gym
+
+from src.environment.base_environment import BaseEnvironment
 
 
 class CartPoleEnvironment(BaseEnvironment):
@@ -16,8 +17,8 @@ class CartPoleEnvironment(BaseEnvironment):
 
         return observation, reward, done, info
 
-    def render(self):
-        self.env.render()
+    def render(self, *args, **kwargs):
+        self.env.render(*args, **kwargs)
 
     def close(self):
         self.env.close()
