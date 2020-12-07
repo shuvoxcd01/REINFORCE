@@ -22,9 +22,10 @@ class Reinforce:
             return self.get_saved_nn_policy()
 
         model = tf.keras.models.Sequential()
-        model.add(tf.keras.layers.Dense(units=28, input_shape=self.observation_shape, activation='relu'))
-        model.add(tf.keras.layers.Dense(units=28, activation='relu'))
-        model.add(tf.keras.layers.Dense(units=28, activation='relu'))
+        model.add(tf.keras.layers.Dense(units=256, input_shape=self.observation_shape, activation='relu'))
+        model.add(tf.keras.layers.BatchNormalization())
+        model.add(tf.keras.layers.Dense(units=256, activation='relu'))
+        model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.Dense(units=self.num_actions, activation='softmax'))
 
         return model
