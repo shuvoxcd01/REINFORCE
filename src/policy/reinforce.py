@@ -9,7 +9,7 @@ class Reinforce:
         self.environment = environment
         self.observation_shape = self.environment.get_observation_shape()
         self.num_actions = self.environment.get_num_actions()
-        self.step_size = 0.001
+        self.step_size = 0.01
         self.discount_factor = 1
         self.load_model_path = load_model_path
         self.save_model_path = save_model_path
@@ -42,7 +42,7 @@ class Reinforce:
 
         return eligibility_vector
 
-    def update_gradients(self, gradients, episode_return, num_step):
+    def update_weights(self, gradients, episode_return, num_step):
         for i in range(len(self.policy.trainable_variables)):
             self.policy.trainable_variables[i].assign_add(
                 self.step_size * episode_return * (self.discount_factor ** num_step) * gradients[i])
@@ -95,7 +95,7 @@ class Reinforce:
             normalized_returns = self.normalize_returns(returns)
 
             for i in range(len(states)):
-                self.update_gradients(gradients_list[i], normalized_returns[i], i)
+                self.update_weights(gradients_list[i], normalized_returns[i], i)
 
             if (self.save_model_path is not None) and not ((epoch_num + 1) % 1000):
                 saved_filename = "_epoch_" + str(epoch_num + 1) + ".h5"
