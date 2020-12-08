@@ -32,7 +32,6 @@ class CartPoleEnvironment(BaseEnvironment):
         self.env.close()
 
     def get_random_action(self):
-        self.step_count += 1
         return self.env.action_space.sample()
 
     def get_observation_shape(self):
