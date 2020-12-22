@@ -1,6 +1,7 @@
 import os
 import statistics
 
+import numpy as np
 import tensorflow as tf
 
 
@@ -9,7 +10,7 @@ class Reinforce:
         self.environment = environment
         self.observation_shape = self.environment.get_observation_shape()
         self.num_actions = self.environment.get_num_actions()
-        self.step_size = 0.01
+        self.step_size = 0.001
         self.discount_factor = 1
         self.load_model_path = load_model_path
         self.save_model_path = save_model_path
@@ -48,8 +49,8 @@ class Reinforce:
                 self.step_size * episode_return * (self.discount_factor ** num_step) * gradients[i])
 
     def get_action(self, observation):
-        action_probs = self.policy(observation)[0]
-        action = tf.argmax(action_probs).numpy()
+        action_probs = self.policy(observation)[0].numpy()
+        action = np.random.choice(a=self.num_actions, p=action_probs)
 
         return action
 
